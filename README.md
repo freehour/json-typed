@@ -1,6 +1,6 @@
-# json-typed
+# json-typedefs
 
-JSON types and functions for TypeScript.
+Type definitions and typed functions for JSON
 
 ## Types
 

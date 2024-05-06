@@ -20,7 +20,7 @@ export default defineConfig(configEnv => ({
     build: {
         lib: {
             entry: resolve('src', 'index.ts'),
-            name: 'Json Typed',
+            name: 'Json Typedefs',
             formats: ['es'],
             fileName: 'index',
         },
