@@ -1,3 +1,5 @@
+import * as Runtype from 'is-runtype';
+
 /* eslint-disable @typescript-eslint/no-use-before-define */
 export type JsonPrimitive = string | number | boolean;
 export type JsonValue = JsonPrimitive | JsonObject | JsonArray | null;
@@ -5,23 +7,23 @@ export interface JsonObject extends Record<string, JsonValue> {}
 export interface JsonArray extends Array<JsonValue> {}
 
 export function isBoolean(value: JsonValue): value is boolean {
-    return typeof value === 'boolean';
+    return Runtype.isBoolean(value);
 }
 
 export function isNumber(value: JsonValue): value is number {
-    return typeof value === 'number';
+    return Runtype.isNumber(value);
 }
 
 export function isString(value: JsonValue): value is string {
-    return typeof value === 'string';
+    return Runtype.isString(value);
 }
 
 export function isObject(value: JsonValue): value is JsonObject {
-    return typeof value === 'object' && value !== null && !Array.isArray(value);
+    return Runtype.isObject(value);
 }
 
 export function isArray(value: JsonValue): value is JsonArray {
-    return Array.isArray(value);
+    return Runtype.isArray(value);
 }
 
 export function isNull(value: JsonValue): value is null {

@@ -1,7 +1,7 @@
 {
     "name": "json-typedefs",
     "private": false,
-    "version": "0.1.3",
+    "version": "0.1.4",
     "type": "module",
     "description": "Type definitions and typed functions for JSON",
     "scripts": {
@@ -15,7 +15,9 @@
     ],
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
-    "dependencies": {},
+    "dependencies": {
+        "is-runtype": "^0.1.0"
+    },
     "devDependencies": {
         "@types/node": "20.12.7",
         "@typescript-eslint/eslint-plugin": "7.7.0",
