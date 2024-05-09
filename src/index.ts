@@ -1,29 +1,29 @@
-import * as Runtype from 'is-runtype';
+import * as runtype from 'is-runtype';
 
 /* eslint-disable @typescript-eslint/no-use-before-define */
 export type JsonPrimitive = string | number | boolean;
 export type JsonValue = JsonPrimitive | JsonObject | JsonArray | null;
-export interface JsonObject extends Record<string, JsonValue> {}
+export interface JsonObject extends Partial<Record<string, JsonValue>> {}
 export interface JsonArray extends Array<JsonValue> {}
 
 export function isBoolean(value: JsonValue): value is boolean {
-    return Runtype.isBoolean(value);
+    return runtype.isBoolean(value);
 }
 
 export function isNumber(value: JsonValue): value is number {
-    return Runtype.isNumber(value);
+    return runtype.isNumber(value);
 }
 
 export function isString(value: JsonValue): value is string {
-    return Runtype.isString(value);
+    return runtype.isString(value);
 }
 
 export function isObject(value: JsonValue): value is JsonObject {
-    return Runtype.isObject(value);
+    return runtype.isObject(value);
 }
 
 export function isArray(value: JsonValue): value is JsonArray {
-    return Runtype.isArray(value);
+    return runtype.isArray(value);
 }
 
 export function isNull(value: JsonValue): value is null {
@@ -34,20 +34,26 @@ export function isPrimitive(value: JsonValue): value is JsonPrimitive {
     return isBoolean(value) || isNumber(value) || isString(value);
 }
 
-function equalsObject(a: JsonObject, b: JsonObject): boolean {
-    const keysA = Object.keys(a);
-    const keysB = Object.keys(b);
+function equalsObject(a: JsonObject, b: JsonObject, exactOptionalProperties = false): boolean {
+    const keysA = Object.keys(a).filter(key => exactOptionalProperties || a[key] !== undefined);
+    const keysB = Object.keys(b).filter(key => exactOptionalProperties || b[key] !== undefined);
+
     if (keysA.length !== keysB.length) {
         return false;
     }
-    return keysA.every(key => equals(a[key], b[key]));
+
+    return keysA.every(key => {
+        const valueA = a[key];
+        const valueB = b[key];
+        return valueA === valueB || (valueA !== undefined && valueB !== undefined && equals(valueA, valueB));
+    });
 }
 
-function equalsArray(a: JsonArray, b: JsonArray): boolean {
+function equalsArray(a: JsonArray, b: JsonArray, exactOptionalProperties = false): boolean {
     if (a.length !== b.length) {
         return false;
     }
-    return a.every((value, index) => equals(value, b[index]));
+    return a.every((value, index) => equals(value, b[index], exactOptionalProperties));
 }
 
 /**
@@ -55,17 +61,20 @@ function equalsArray(a: JsonArray, b: JsonArray): boolean {
  *
  * @param a The first JSON value.
  * @param b The second JSON value.
+ * @param exactOptionalProperties Interpret undefined properties as written.
+ * If true keys must match exactly for objects to be considered equal.
+ * If false, keys with undefined values are ignored in the comparison.
  * @returns True if the values are deeply equal, otherwise false.
  */
-export function equals(a: JsonValue, b: JsonValue): boolean {
+export function equals(a: JsonValue, b: JsonValue, exactOptionalProperties = false): boolean {
     if (a === b) {
         return true;
     }
     if (isObject(a) && isObject(b)) {
-        return equalsObject(a, b);
+        return equalsObject(a, b, exactOptionalProperties);
     }
     if (isArray(a) && isArray(b)) {
-        return equalsArray(a, b);
+        return equalsArray(a, b, exactOptionalProperties);
     }
     return false;
 }
@@ -74,14 +83,19 @@ export function equals(a: JsonValue, b: JsonValue): boolean {
  * Deep clone a JSON value.
  *
  * @param value The JSON value to clone.
+ * @param exactOptionalProperties Keep undefined properties in the cloned object.
  * @returns The cloned JSON value.
  */
-export function clone(value: JsonValue): JsonValue {
+export function clone(value: JsonValue, exactOptionalProperties = false): JsonValue {
     if (isObject(value)) {
-        return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, clone(v)]));
+        return Object.fromEntries(
+            Object.entries(value)
+                .filter(([k, v]) => exactOptionalProperties || v !== undefined)
+                .map(([k, v]) => (v !== undefined ? [k, clone(v, exactOptionalProperties)] : [k, v])),
+        );
     }
     if (isArray(value)) {
-        return value.map(clone);
+        return value.map(v => clone(v, exactOptionalProperties));
     }
     return value;
 }

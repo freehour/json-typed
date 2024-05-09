@@ -1,9 +1,9 @@
 {
     "name": "json-typedefs",
     "private": false,
-    "version": "0.1.4",
+    "version": "0.1.5",
     "type": "module",
-    "description": "Type definitions and typed functions for JSON",
+    "description": "Typed definitions and functions for JSON",
     "scripts": {
         "dev": "vite",
         "build": "tsc && vite build",
@@ -16,7 +16,7 @@
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
     "dependencies": {
-        "is-runtype": "^0.1.0"
+        "is-runtype": "^0.1.1"
     },
     "devDependencies": {
         "@types/node": "20.12.7",
