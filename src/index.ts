@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-use-before-define */
 import * as runtype from 'is-runtype';
 
-/* eslint-disable @typescript-eslint/no-use-before-define */
+
 export type JsonPrimitive = string | number | boolean;
 export type JsonValue = JsonPrimitive | JsonObject | JsonArray | null;
 export interface JsonObject extends Partial<Record<string, JsonValue>> {}
