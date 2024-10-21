@@ -1,39 +1,82 @@
-/* eslint-disable @typescript-eslint/no-use-before-define */
 import * as runtype from 'is-runtype';
 
 
+/**
+ * Recursively checks if a type (including interfaces) is a JSON object type.
+ * This is an extension of the classic JSON type including `undefined` (optional) properties.
+ *
+ * @param T The type to check.
+ */
+export type JsonStructure<T> = {
+    [K in keyof T]: T[K] extends JsonValue | undefined
+        ? T[K]
+        : T[K] extends (...args: unknown[]) => unknown
+            ? never
+            : T[K] extends object
+                ? JsonStructure<T[K]>
+                : never
+};
+
+/**
+ * Typedef to check if a type (including interfaces) is a Json type.
+ * This is an extension of the classic JSON type including `undefined` and primitive root types.
+ *
+ * @param T The type to check.
+ * @example function myFunction<T extends Json<T>>(value: T): void {
+ *      // value is a Json type
+ * }
+ */
+export type Json<T> = JsonValue | JsonStructure<T>;
+
+/**
+ * A JSON primitive is a string, number, or boolean value.
+ */
 export type JsonPrimitive = string | number | boolean;
-export type JsonValue = JsonPrimitive | JsonObject | JsonArray | null;
-export interface JsonObject extends Partial<Record<string, JsonValue>> {}
+
+/**
+ * An extension of the classic JSON array type including `undefined` elements.
+ */
 export interface JsonArray extends Array<JsonValue> {}
 
-export function isBoolean(value: JsonValue): value is boolean {
-    return runtype.isBoolean(value);
+/**
+ * An extension of the classic JSON object type including `undefined` (optional) properties.
+ */
+export interface JsonObject extends Partial<Record<string, JsonValue>> {
 }
 
-export function isNumber(value: JsonValue): value is number {
-    return runtype.isNumber(value);
+/**
+ * An extension of the classic JSON type including `undefined` and primitive root types.
+ */
+export type JsonValue = JsonPrimitive | JsonObject | JsonArray | null | undefined;
+
+export function isObject<T extends JsonStructure<T>>(value: T | JsonValue): value is JsonObject {
+    return runtype.isObject(value) && !runtype.isArray(value);
 }
 
-export function isString(value: JsonValue): value is string {
-    return runtype.isString(value);
-}
-
-export function isObject(value: JsonValue): value is JsonObject {
-    return runtype.isObject(value);
-}
-
-export function isArray(value: JsonValue): value is JsonArray {
+export function isArray<T extends JsonStructure<T>>(value: T | JsonValue): value is JsonArray {
     return runtype.isArray(value);
 }
 
-export function isNull(value: JsonValue): value is null {
-    return value === null;
+export function isPrimitive<T extends JsonStructure<T>>(value: T | JsonValue): value is JsonPrimitive {
+    return runtype.isString(value) || runtype.isNumber(value) || runtype.isBoolean(value);
 }
 
-export function isPrimitive(value: JsonValue): value is JsonPrimitive {
-    return isBoolean(value) || isNumber(value) || isString(value);
+export function isJsonValue(value: unknown): value is JsonValue {
+    return value === undefined || value === null || isJsonPrimitive(value) || isJsonObject(value) || isJsonArray(value);
 }
+
+export function isJsonObject(value: unknown): value is JsonObject {
+    return runtype.isObject(value) && !runtype.isArray(value) && !runtype.isFunction(value) && Object.values(value).every(isJsonValue);
+}
+
+export function isJsonArray(value: unknown): value is JsonArray {
+    return runtype.isArray(value) && value.every(isJsonValue);
+}
+
+export function isJsonPrimitive(value: unknown): value is JsonPrimitive {
+    return runtype.isString(value) || runtype.isNumber(value) || runtype.isBoolean(value);
+}
+
 
 function equalsObject(a: JsonObject, b: JsonObject, exactOptionalProperties = false): boolean {
     const keysA = Object.keys(a).filter(key => exactOptionalProperties || a[key] !== undefined);
@@ -67,15 +110,15 @@ function equalsArray(a: JsonArray, b: JsonArray, exactOptionalProperties = false
  * If false, keys with undefined values are ignored in the comparison.
  * @returns True if the values are deeply equal, otherwise false.
  */
-export function equals(a: JsonValue, b: JsonValue, exactOptionalProperties = false): boolean {
+export function equals<T extends Json<T>>(a: T, b: T, exactOptionalProperties = false): boolean {
     if (a === b) {
         return true;
     }
-    if (isObject(a) && isObject(b)) {
-        return equalsObject(a, b, exactOptionalProperties);
-    }
     if (isArray(a) && isArray(b)) {
         return equalsArray(a, b, exactOptionalProperties);
+    }
+    if (isObject(a) && isObject(b)) {
+        return equalsObject(a, b, exactOptionalProperties);
     }
     return false;
 }
@@ -87,16 +130,16 @@ export function equals(a: JsonValue, b: JsonValue, exactOptionalProperties = fal
  * @param exactOptionalProperties Keep undefined properties in the cloned object.
  * @returns The cloned JSON value.
  */
-export function clone(value: JsonValue, exactOptionalProperties = false): JsonValue {
-    if (isObject(value)) {
+export function clone<T extends Json<T>>(value: T, exactOptionalProperties = false): T {
+    if (isJsonArray(value)) {
+        return value.map(v => clone(v, exactOptionalProperties)) as T;
+    }
+    if (isJsonObject(value)) {
         return Object.fromEntries(
             Object.entries(value)
                 .filter(([k, v]) => exactOptionalProperties || v !== undefined)
                 .map(([k, v]) => (v !== undefined ? [k, clone(v, exactOptionalProperties)] : [k, v])),
-        );
-    }
-    if (isArray(value)) {
-        return value.map(v => clone(v, exactOptionalProperties));
+        ) as T;
     }
     return value;
 }
@@ -111,7 +154,7 @@ export function clone(value: JsonValue, exactOptionalProperties = false): JsonVa
  * If a member contains nested objects, the nested objects are transformed before the parent object is.
  * @returns The parsed JSON value.
  */
-export function parse(text: string, reviver?: (this: any, key: string, value: JsonValue) => JsonValue): JsonValue {
+export function parse<T extends Json<T>>(text: string, reviver?: (this: any, key: string, value: JsonValue) => JsonValue): T {
     return JSON.parse(text, reviver);
 }
 
@@ -124,6 +167,6 @@ export function parse(text: string, reviver?: (this: any, key: string, value: Js
  * @param space Adds indentation, white space, and line break characters to the return-value JSON text to make it easier to read.
  * @returns The JSON string representation of the value.
  */
-export function stringify(value: JsonValue, replacer?: (string | number)[] | null, space?: string | number): string {
+export function stringify<T extends Json<T>>(value: T, replacer?: (string | number)[] | null, space?: string | number): string {
     return JSON.stringify(value, replacer, space);
 }
