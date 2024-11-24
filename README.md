@@ -1,29 +1,24 @@
 # json-typedefs
 
-Type definitions and typed functions for JSON
+Type definitions for JSON
 
 ## Types
 
 ```typescript
 type JsonPrimitive = string | number | boolean;
-type JsonValue = JsonPrimitive | JsonObject | JsonArray | null;
-interface JsonObject extends Record<string, JsonValue> {}
 interface JsonArray extends Array<JsonValue> {}
+interface JsonObject extends Partial<Record<string, JsonValue>> {}
+type JsonValue = JsonPrimitive | JsonArray | JsonObject | null;
 ```
 
 ## Functions
 
 ```typescript
-function isBoolean(value: JsonValue): value is boolean;
-function isNumber(value: JsonValue): value is number;
-function isString(value: JsonValue): value is string;
-function isObject(value: JsonValue): value is JsonObject;
-function isArray(value: JsonValue): value is JsonArray;
-function isNull(value: JsonValue): value is null;
-function isPrimitive(value: JsonValue): value is JsonPrimitive;
+function isJsonPrimitive(value: JsonValue): value is JsonPrimitive;
+function isJsonArray(value: JsonValue): value is JsonArray;
+function isJsonObject(value: unknown): value is JsonObject
+function isJsonValue(value: JsonValue): value is JsonValue;
 
 function equals(a: JsonValue, b: JsonValue): boolean;
 function clone(value: JsonValue): JsonValue;
-function parse(text: string, reviver?: (this: any, key: string, value: JsonValue) => JsonValue): JsonValue;
-function stringify(value: JsonValue, replacer?: (string | number)[] | null, space?: string | number): string;
 ```
